@@ -12,11 +12,19 @@ app.get('/', function(req, res) {
   res.sendFile(__dirname + '/index.html');
 });
 
+var stocks = [];
+
 io.on('connection', function(socket) {
   console.log('a user connected');
-  socket.on('addStock', function(msg) {
-    console.log(msg);
-    io.emit('newStock', msg);
+  socket.on('addStock', function(newStock) {
+    console.log(newStock);
+    if (stocks.indexOf(newStock) !== -1 || newStock === '') {
+      io.emit('updatesStockList', stocks);
+    } else {
+      stocks.push(newStock);
+      io.emit('updatesStockList', stocks);
+    }
+    console.log(stocks);
   });
   socket.on('disconnect', function() {
     console.log('user disconnected');
