@@ -1,6 +1,6 @@
 var socket = io();
 
-function verifySymbol(jsonpSymbolData) {
+function verifyStockSymbol(jsonpSymbolData) {
   // console.log(jsonpSymbolData);
   if (jsonpSymbolData.length) {
     socket.emit('addStock', jsonpSymbolData[0].Symbol);
@@ -9,9 +9,40 @@ function verifySymbol(jsonpSymbolData) {
   }
 }
 
+function displayStockButtons(stockList) {
+  var listHead = document.getElementById('stockUl');
+  listHead.innerHTML = '';
+  stockList.map(function(stock) {
+    listHead.innerHTML = listHead.innerHTML + '<li class="bars">' +
+          '<p>' + stock + '</p>' +
+          '<button id="' + stock + '">Delete</button>' +
+          '</li>';
+  });
+  updateStockButtonEventHandlers();
+}
+
+function updateStockButtonEventHandlers() {
+  var stockButtons = document.getElementsByTagName('button');
+  for (var i = 1; i < stockButtons.length; i++) {
+    var button = stockButtons[i];
+    button.onclick = postStockDelete;
+  }
+}
+
+function postStockDelete(e) {
+  arrestEvent(e);
+  var stockSymbol = this.getAttribute('id');
+  socket.emit('deleteStock', stockSymbol);
+};
+
 function renderGraph(data) {
 
-  var minPrice, maxPrice;
+  // =====================
+  // Format Incoming Data
+  // =====================
+
+  var minPrice;
+  var maxPrice;
   if (data.Elements.length === 1) {
     minPrice = data.Elements[0].DataSeries.close.min;
     maxPrice = data.Elements[0].DataSeries.close.max;
@@ -39,18 +70,24 @@ function renderGraph(data) {
   var colors = ['#a6cee3','#1f78b4','#b2df8a','#33a02c',
                 '#fb9a99','#e31a1c','#fdbf6f','#ff7f00',
                 '#cab2d6','#6a3d9a','#ffff99','#b15928'];
-  var width = 1000;
-  var height = 500;
-  var margins = {top: 20, right: 20, bottom: 20, left: 50};
 
   // ======================
   // Begin work with D3
   // ======================
 
+  var margins = {top: 20, right: 20, bottom: 20, left: 20};
+  var width = 1000 - margins.top - margins.bottom;
+  var height = 500 - margins.left - margins.right;
+
   var chart =  document.getElementById('visualisation');
   chart.innerHTML = '';
 
-  var vis = d3.select('#visualisation');
+  var vis = d3.select('#visualisation')
+    .append('svg')
+    .attr('width', width + margins.left + margins.right)
+    .attr('height', height + margins.top + margins.bottom)
+  .append('g')
+    .attr('transform', 'translate(' + margins.left + ',' + margins.top +     ')');
 
   xScale = d3.time.scale()
     .range([margins.left, width - margins.right])
@@ -59,16 +96,17 @@ function renderGraph(data) {
     .range([height - margins.top, margins.bottom])
     .domain([minPrice - 15, maxPrice + 15]);
 
-  xAxis = d3.svg.axis().scale(xScale);
+  xAxis = d3.svg.axis()
+    .scale(xScale);
   yAxis = d3.svg.axis()
     .scale(yScale)
     .orient('left');
 
-  vis.append('svg:g')
+  vis.append('g')
       .attr('transform', 'translate(0,' + (height - margins.bottom) + ')')
       .call(xAxis);
 
-  vis.append('svg:g')
+  vis.append('g')
     .attr('transform', 'translate(' + (margins.left) + ',0)')
     .call(yAxis);
 
@@ -86,7 +124,7 @@ function renderGraph(data) {
       datePricePairs.push([new Date(data.Dates[i]),
                            stock.DataSeries.close.values[i]]);
     }
-    vis.append('svg:path')
+    vis.append('g:path')
       .attr('d', line(datePricePairs))
       .attr('stroke', colors[index])
       .attr('stroke-width', 2)
@@ -103,15 +141,15 @@ window.onload = function() {
 
   var submit = document.getElementById('submit');
   var input = document.getElementById('m');
-  var messages = document.getElementById('messages');
+  var stockListUl = document.getElementById('stockUl');
 
   var stocks = [];
-  var stockData;
 
   submit.addEventListener('click', function(e) {
     arrestEvent(e);
     var newStock = input.value;
-    var verifyStockUrl = 'http://dev.markitondemand.com/MODApis/Api/v2/Lookup/jsonp?input=' + newStock + '&callback=verifySymbol';
+    var verifyStockUrl = 'http://dev.markitondemand.com/MODApis/Api/v2/Lookup/jsonp?input=' +
+                         newStock + '&callback=verifyStockSymbol';
     var script = document.createElement('script');
     script.src = verifyStockUrl;
     document.getElementsByTagName('head')[0].appendChild(script);
@@ -119,21 +157,32 @@ window.onload = function() {
   });
 
   socket.on('updatesStockList', function(stockList) {
-    console.log(stockList);
-    var elements = "";
+    // console.log(stockList);
+
+    // update stock list below viz
+
+    displayStockButtons(stockList);
+
+    // Make API Request for stocks
+
+    var elements = '';
     stockList.map(function(each, index) {
       var objCom = '';
       if (index > 0) { objCom = ','; };
-      elements = elements + objCom + ' %20{%20%22Symbol%22:%22' + each + '%22,%20%22Type%22:%22price%22,%20%22Params%22:[%22c%22]%20}';
+      elements = elements + objCom + ' %20{%20%22Symbol%22:%22' + each +
+                 '%22,%20%22Type%22:%22price%22,%20%22Params%22:[%22c%22]%20}';
     });
-    var verifyStockUrl = 'http://dev.markitondemand.com/MODApis/Api/v2/InteractiveChart/jsonp?parameters={%20%22Normalized%22:%20false,%20%22NumberOfDays%22:%20365,%20%22DataPeriod%22:%20%22Day%22,%20%22Elements%22:%20[' + elements + '%20]%20}&callback=renderGraph';
+    var verifyStockUrl = 'http://dev.markitondemand.com/MODApis/Api/v2/InteractiveChart/' +
+                         'jsonp?parameters={%20%22Normalized%22:%20false,%20%22NumberOfDays' +
+                         '%22:%20365,%20%22DataPeriod%22:%20%22Day%22,%20%22Elements%22:%20[' +
+                          elements + '%20]%20}&callback=renderGraph';
     var script = document.createElement('script');
     script.src = verifyStockUrl;
     document.getElementsByTagName('head')[0].appendChild(script);
     input.value = '';
-
   });
 
   socket.emit('addStock', '');
 
-}
+};
+
