@@ -8,7 +8,9 @@ Websockets push updates to all connected clients without reloading the page.
 
 ** Installation and Demonstration
 
-You must have npm and node installed to demo this app.
+This app is deployed at http://stocks-fugalfunkster.c9users.io/
+
+To run locally, you must have npm and node installed to demo this app.
 
 #+BEGIN_SRC 
   $ git clone https://github.com/fugalfunkster/stocks.git stocks
