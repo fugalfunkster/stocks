@@ -1,15 +1,38 @@
 * Stock Ticker App
 
-** ToDo List [0/0]
-- [ ] Add Divs for each symbol
-  - [ ] display symbol and Delete sub-button
-- [ ] add tooltips
-- [ ] client.js refactor
-- [ ] css/html refactor
+** Description
 
-** Objective: Build a full stack JavaScript app that is functionally similar to this: http://watchstocks.herokuapp.com/ [0/4]
+This full-stack app uses D3 and websockets to graph stock prices.
+Quotes are obtained through MarkitOnDemand's stock quote API.
+Websockets push updates to all connected clients without reloading the page.
+
+** Installation and Demonstration
+
+You must have npm and node installed to demo this app.
+
+#+BEGIN_SRC 
+  $ git clone https://github.com/fugalfunkster/stocks.git stocks
+  $ cd stocks
+  $ npm install
+  $ npm start
+#+END_SRC
+
+In a browser, navigate to localhost:8080. Also open an 'incognito' window to see live updates for all connected clients.
+
+** Dependencies
+- Node.js
+- Express
+- SocketIO
+- D3.js
+
+** ToDo List [0/3]
+- [ ] add legend and labels
+- [ ] add tooltips
+- [ ] refactor styles
+
+** Objective: Build a full stack JavaScript app that is functionally similar to this: http://watchstocks.herokuapp.com/ [4/4]
 - [X] User Story: I can view a graph displaying the recent trend lines for each added stock.
 - [X] User Story: I can add new stocks by their symbol name.
-- [ ] User Story: I can remove stocks.
+- [X] User Story: I can remove stocks.
 - [X] User Story: I can see changes in real-time when any other user adds or removes a stock. For this you will need to use Web Sockets.
    
